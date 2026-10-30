@@ -43,7 +43,7 @@ jobs:
 
       - name: Prepare pinned Capacitor tooling
         run: |
-          npm install --no-save --package-lock=false --ignore-scripts @capacitor/core@8.6.0 @capacitor/ios@8.6.0 @capacitor/cli@8.6.0
+          npm install --no-save --ignore-scripts @capacitor/core@8.6.0 @capacitor/ios@8.6.0 @capacitor/cli@8.6.0
           if [ ! -f capacitor.config.ts ]; then
             cat > capacitor.config.ts <<'CAPACITOR'
           import type { CapacitorConfig } from '@capacitor/cli';
