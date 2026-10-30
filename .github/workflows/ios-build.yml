@@ -1,0 +1,108 @@
+name: iOS build (unsigned)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/ios-build.yml'
+      - 'capacitor.config.ts'
+      - 'ios/**'
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'vite.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'api-ts/**'
+      - 'shared/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build-unsigned-ipa:
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Prepare pinned Capacitor tooling
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts @capacitor/core@8.6.0 @capacitor/ios@8.6.0 @capacitor/cli@8.6.0
+          if [ ! -f capacitor.config.ts ]; then
+            cat > capacitor.config.ts <<'CAPACITOR'
+          import type { CapacitorConfig } from '@capacitor/cli';
+          const config: CapacitorConfig = {
+            appId: 'top.izuna.foliamajor.ios',
+            appName: 'Folia',
+            webDir: 'dist',
+          };
+          export default config;
+          CAPACITOR
+          fi
+
+      - name: Build web assets
+        run: npm run build
+
+      - name: Generate and sync iOS shell
+        run: |
+          if [ ! -d ios/App/App.xcodeproj ]; then
+            npx cap add ios
+          fi
+          npx cap sync ios
+          python3 - <<'PY'
+          import pathlib
+          import plistlib
+          path = pathlib.Path('ios/App/App/Info.plist')
+          data = plistlib.loads(path.read_bytes())
+          modes = list(data.get('UIBackgroundModes', []))
+          if 'audio' not in modes:
+              modes.append('audio')
+          data['UIBackgroundModes'] = modes
+          path.write_bytes(plistlib.dumps(data))
+          PY
+
+      - name: Archive the iOS app without code signing
+        run: |
+          xcodebuild -version
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Folia.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            archive
+
+      - name: Package unsigned IPA and generated Xcode project
+        run: |
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$RUNNER_TEMP/Folia.xcarchive/Products/Applications/App.app" "$RUNNER_TEMP/Payload/App.app"
+          ditto -c -k --sequesterRsrc --keepParent "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/Folia-unsigned.ipa"
+          ditto -c -k --sequesterRsrc --keepParent ios "$RUNNER_TEMP/Folia-ios-project.zip"
+          echo 'Unsigned IPA: requires Apple code signing before installation. Spotify desktop playback is not included in this iOS shell.' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload unsigned iOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Folia-iOS-unsigned
+          path: |
+            ${{ runner.temp }}/Folia-unsigned.ipa
+            ${{ runner.temp }}/Folia-ios-project.zip
+          if-no-files-found: error
+          retention-days: 7
