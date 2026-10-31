@@ -1,0 +1,22 @@
+/* Mobile settings controls: keep compact desktop styling, but provide reliable touch targets. */
+@media (pointer: coarse) {
+    .st-window {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .st-window button,
+    .st-window [role='button'],
+    .st-window [role='switch'],
+    .st-window [role='tab'] {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .st-window input:not([type='range']) {
+        min-height: 44px;
+    }
+
+    .st-window .settings-nav-strip {
+        touch-action: pan-x;
+    }
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Loader2, Settings, PanelsTopLeft } from 'lucide-react';
+import { Search, Loader2, Settings, PanelsTopLeft, Heart } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { resolveSearchSource, useSearchNavigationStore } from '../../../../stores/useSearchNavigationStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -33,6 +33,7 @@ import { useLibraryHomeDirectory } from '../../../core/home/useLibraryHomeDirect
 import { useLibraryHomeListRegistration, useLibraryHomeTabsRegistration } from '../../../core/home/useLibraryHomeSurfaceRegistration';
 import { cycleIndex } from '../../../core/home/homeSources';
 import { useUpdateIndicator } from '../../../../hooks/useUpdateIndicator';
+import { openSpotifyImportSheet } from '../../../../components/app/spotify-import/spotifyImportUiStore';
 
 // src/library/suites/grid/home/Grid3D.tsx
 // Glassmorphic interactive desktop home view replacing the legacy 3D carousel.
@@ -322,6 +323,15 @@ export const Grid3D: React.FC<Grid3DProps> = (props) => {
                                     {t('options.updateAvailable')}
                                 </span>
                             )}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={openSpotifyImportSheet}
+                            aria-label={t('spotifyImport.shortcut')}
+                            title={t('spotifyImport.shortcut')}
+                            className="ml-1 grid min-h-11 min-w-11 place-items-center rounded-full transition-colors hover:bg-white/10"
+                        >
+                            <Heart size={20} style={{ color: 'var(--text-primary)' }} aria-hidden />
                         </button>
                         {scanProgress?.active && (
                             <div

@@ -151,6 +151,17 @@ describe('app start, where the kept account waits for the platform to name the u
         expect(log).toHaveBeenCalledWith(`[Account] ${providerId}: start: read: 1 playlists, 1 of them the account's own; 1 liked songs read`);
     });
 
+    it('keeps a provider account and playlist data in memory when the adapter disables snapshots', async () => {
+        keep({ user, collections: [list('previous')], likedSongIds: ['previous-like'] });
+        platform({ auth: { cacheAccountSnapshot: false } });
+
+        await expect(omni.readAccount(providerId, 'start')).resolves.toBe('read');
+
+        expect(account()).toMatchObject({ status: 'authenticated', user, collections: [{ id: 'one' }], likedSongIds: ['liked-1'], freshness: 'fresh' });
+        expect(stored.has(snapshotKey())).toBe(false);
+        expect(disk.asked).toBe(0);
+    });
+
     it('shows nothing that was kept of another user', async () => {
         keep({ user: { id: 'someone-else', nickname: 'Other' }, collections: [list('theirs')], likedSongIds: ['their-like'] });
         const liked = held<ProviderLikedSongIds>();

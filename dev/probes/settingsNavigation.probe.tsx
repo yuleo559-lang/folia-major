@@ -95,7 +95,7 @@ const ProbeBody: React.FC = () => {
                 } as React.CSSProperties}
             >
                 <div
-                    className="flex h-full flex-col overflow-hidden rounded-2xl bg-[var(--st-win)] md:grid md:grid-cols-[212px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]"
+                    className="st-window flex h-full flex-col overflow-hidden rounded-2xl bg-[var(--st-win)] md:grid md:grid-cols-[212px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]"
                     style={settingsTokens(false, DEFAULT_THEME)}
                 >
                     <SettingsSideList

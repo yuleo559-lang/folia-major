@@ -160,6 +160,7 @@ For Linux packages, the Wayland / Hyprland remote control window, and other desk
 | Option | Details |
 | --- | --- |
 | **PWA (recommended)** | Deploy the web or self-hosted version, then add it to your home screen from Chrome for Android or iOS Safari to use it as a PWA. |
+| **iOS (experimental source build)** | This repository includes a Capacitor iOS shell; it requires macOS, Xcode, and Apple code signing. No prebuilt IPA is provided. See [iOS build instructions](docs/ios-build.md). Spotify's desktop playback is not available in this shell. |
 | **Community ports (Android)** | [maimai993/folia-sonnet](https://github.com/maimai993/folia-sonnet) · [whycfawa/folia-android](https://github.com/whycfawa/folia-android) |
 | **Build it yourself (Android)** | If you are comfortable with the tooling, package the web version as an installable APK with Capacitor. See the example repository [chthollyphile/folia-sonnet](https://github.com/chthollyphile/folia-sonnet). |
 

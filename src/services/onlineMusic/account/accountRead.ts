@@ -175,6 +175,10 @@ export const createAccountReads = <R>(deps: AccountReadsDeps<R>) => {
     // no snapshot is found, what the adapter's build from before the snapshot kept is made one;
     // once it is saved the adapter forgets it, and where the save fails it is kept for the next start.
     const keptAccount = async (provider: OnlineMusicProvider): Promise<ProviderAccountSnapshot | null> => {
+        if (provider.auth?.cacheAccountSnapshot === false) {
+            await clearProviderAccountSnapshot(provider.id).catch(() => undefined);
+            return null;
+        }
         let kept = await loadProviderAccountSnapshot(provider.id).catch(() => null);
         const auth = provider.auth;
         if (!kept && auth?.oldKeptAccount) {
@@ -198,10 +202,11 @@ export const createAccountReads = <R>(deps: AccountReadsDeps<R>) => {
 
     // Saves the account as the store holds it now, with `collections` as they were just read,
     // after the save before it. Null where the account left meanwhile.
-    const save = (providerId: OnlineProviderId, reads: PlatformReads, generation: number, collections: ProviderCollection[]) => {
+    const save = (providerId: OnlineProviderId, reads: PlatformReads, generation: number, collections: ProviderCollection[], persistSnapshot = true) => {
         const saved = reads.saving.catch(() => {}).then(() => {
             const account = store().accounts[providerId];
             if (reads.generation !== generation || !account?.user) return null;
+            if (!persistSnapshot) return { savedAt: deps.now() };
             return saveProviderAccountSnapshot(providerId, {
                 user: account.user,
                 collections,
@@ -396,7 +401,7 @@ export const createAccountReads = <R>(deps: AccountReadsDeps<R>) => {
                 }
             }
 
-            const saved = await save(providerId, reads, generation, collections);
+            const saved = await save(providerId, reads, generation, collections, provider.auth?.cacheAccountSnapshot !== false);
             if (!current() || !saved) return 'unknown';
             store().updateAccount(providerId, { freshness: 'fresh', lastUpdatedAt: saved.savedAt });
             console.log(`[Account] ${said}: read: ${collections.length} playlists, ${collections.filter(collection => collection.isOwned).length} of them the account's own; ${likedSaid}`);
@@ -432,7 +437,7 @@ export const createAccountReads = <R>(deps: AccountReadsDeps<R>) => {
                 ...(account.collections || []).filter(collection => collection.type !== 'playlist'),
                 ...playlists,
             ];
-            const saved = await save(providerId, reads, generation, collections);
+            const saved = await save(providerId, reads, generation, collections, provider.auth?.cacheAccountSnapshot !== false);
             if (!current() || !saved) return playlists;
             store().updateAccount(providerId, { collections, freshness: 'fresh', lastUpdatedAt: saved.savedAt });
             return playlists;

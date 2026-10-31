@@ -12,6 +12,7 @@ import { selectBravaisHasCurrentSong } from './bravaisBack';
 import { usePlaybackStore } from '../../../stores/usePlaybackStore';
 import { useUpdateIndicator } from '../../../hooks/useUpdateIndicator';
 import { resolveSearchSource, useSearchNavigationStore } from '../../../stores/useSearchNavigationStore';
+import { openSpotifyImportSheet } from '../../../components/app/spotify-import/spotifyImportUiStore';
 
 // src/library/suites/bravais/useBravaisHomeChrome.ts
 // 首页缝里与来源无关的那一部分（设计稿 §10.5）：五个一级页签与 F6 的循环、全局搜索框（提交走 onSearchCommitted
@@ -142,6 +143,7 @@ export const useBravaisHomeChrome = ({
             badge: updateAvailable ? t('options.updateAvailable') : undefined,
             run: () => latest.current.props.onOpenSettings?.('help'),
         });
+        tools.push({ id: 'spotify-import', label: t('spotifyImport.shortcut'), run: openSpotifyImportSheet });
         return tools;
     }, [hasLattice, hasPlayer, hasSettings, hasStage, stageActive, t, updateAvailable]);
 

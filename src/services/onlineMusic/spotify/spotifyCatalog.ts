@@ -7,6 +7,8 @@ import {
 import type { SpotifyAlbum, SpotifyArtistRow, SpotifyPlaylist, SpotifyTrack } from './spotifyNormalize';
 import type { SpotifyLikedAnswer } from './spotifyLibrary';
 import { querySpotify } from './spotifyTransport';
+import { isSpotifyNativeApiEnabled } from './spotifyApiConfig';
+import { getSpotifyApiPlaylistTracks } from './spotifyApiLibrary';
 
 // src/services/onlineMusic/spotify/spotifyCatalog.ts
 // Playlists, albums and artists. Spotify pages a playlist and an album by offset and gives as
@@ -93,6 +95,7 @@ export const spotifyPlaylistTracks = (id: string, limit: number, offset: number,
 
 export const spotifyCatalog: OnlineCatalogProvider = {
     async getPlaylistTracks(id, limit, offset) {
+        if (isSpotifyNativeApiEnabled()) return getSpotifyApiPlaylistTracks(id, limit, offset);
         if (id !== SPOTIFY_LIKED_ID) return spotifyPlaylistTracks(String(id), limit, offset);
         return songPage(offset, async at => {
             const tracks = (await querySpotify<SpotifyLikedAnswer>('fetchLibraryTracks', { offset: at, limit: Math.min(limit, MAX_ROWS) })).me?.library?.tracks;

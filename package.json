@@ -19,6 +19,8 @@
     "dev": "vite",
     "dev:probe": "vite --open /dev-probe.html",
     "build": "npm run build:vercel-api && vite build",
+    "ios:sync": "npm run build && cap sync ios",
+    "ios:open": "cap open ios",
     "build:vercel-api": "tsc -p api-ts/tsconfig.json",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -244,6 +246,11 @@
     }
   },
   "dependencies": {
+    "@aparajita/capacitor-secure-storage": "8.0.1",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/browser": "8.0.5",
+    "@capacitor/core": "8.6.0",
+    "@capacitor/ios": "8.6.0",
     "@google/genai": "^2.24.0",
     "@neteasecloudmusicapienhanced/api": "4.41.1",
     "@xhayper/discord-rpc": "^1.5.1",
@@ -266,6 +273,7 @@
   },
   "devDependencies": {
     "@applemusic-like-lyrics/ttml": "^1.0.1",
+    "@capacitor/cli": "8.6.0",
     "@chenglou/pretext": "^0.0.9",
     "@emnapi/core": "1.11.3",
     "@emnapi/runtime": "1.11.3",

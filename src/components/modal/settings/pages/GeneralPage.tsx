@@ -25,7 +25,7 @@ const O = {
     language: option(LANGUAGE, 'appLanguage', 'options.appLanguage'),
     autoPlay: option(LAUNCH, 'autoPlayOnLaunch', 'options.autoPlayOnLaunch'),
     openPlayer: option(LAUNCH, 'openPlayerOnLaunch', 'options.openPlayerOnLaunch', { electronOnly: true }),
-    titlebarButtons: option(LAUNCH, 'alwaysShowMainWindowTitlebar', 'options.alwaysShowMainWindowTitlebar'),
+    titlebarButtons: option(LAUNCH, 'alwaysShowMainWindowTitlebar', 'options.alwaysShowMainWindowTitlebar', { electronOnly: true }),
     updateCheck: option(UPDATE, 'enableUpdateCheck', 'options.enableUpdateCheck'),
     autoUpdate: option(UPDATE, 'enableAutoUpdate', 'options.enableAutoUpdate'),
     updateChannel: option(UPDATE, 'updateChannel', 'options.updateChannel'),
@@ -94,9 +94,11 @@ const GeneralPage: React.FC = () => {
                         <Toggle checked={openPlayerOnLaunch} onChange={onToggleOpenPlayerOnLaunch} />
                     </Row>
                 )}
-                <Row option={O.titlebarButtons} hint={t('options.alwaysShowMainWindowTitlebarDesc')}>
-                    <Toggle checked={titlebarButtons} onChange={setTitlebarButtons} />
-                </Row>
+                {isElectron && (
+                    <Row option={O.titlebarButtons} hint={t('options.alwaysShowMainWindowTitlebarDesc')}>
+                        <Toggle checked={titlebarButtons} onChange={setTitlebarButtons} />
+                    </Row>
+                )}
             </Group>
 
             {isElectron && (

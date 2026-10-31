@@ -3,6 +3,7 @@ import { CircleHelp, Search, X, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDragToScroll } from '../../../../hooks/useDragToScroll';
 import type { SettingsNavGroup, SettingsSectionId } from './settingsNavModel';
+import '../settingsMobile.css';
 // src/components/modal/settings/navigation/SettingsSideList.tsx
 // The settings' side list: a search field, then the categories under their group names, and Help at
 // the foot. It lists categories only; what a page holds is in that page's header. Under 768px the
@@ -33,7 +34,7 @@ export const SettingsSideList: React.FC<SettingsSideListProps> = ({
 }) => {
     const { t } = useTranslation();
     const stripRef = useRef<HTMLDivElement>(null);
-    // The strip scrolls sideways under a dragging mouse; the wide list has nothing to drag.
+    // Touch and pen keep native scrolling; the narrow strip also supports mouse drag.
     const { isDragging, hasDragged, handlers } = useDragToScroll(stripRef);
 
     const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -96,7 +97,7 @@ export const SettingsSideList: React.FC<SettingsSideListProps> = ({
             <nav
                 ref={stripRef}
                 {...(isWide ? {} : handlers)}
-                className={`mt-2 flex min-h-0 gap-1 overflow-x-auto [scrollbar-width:none] md:mt-1 md:flex-1 md:flex-col md:gap-0 md:overflow-y-auto md:overflow-x-hidden ${isDragging ? 'cursor-grabbing select-none' : ''}`}
+                className={`settings-nav-strip mt-2 flex min-h-0 gap-1 overflow-x-auto [scrollbar-width:none] md:mt-1 md:flex-1 md:flex-col md:gap-0 md:overflow-y-auto md:overflow-x-hidden ${isDragging ? 'cursor-grabbing select-none' : ''}`}
             >
                 {groups.map(group => (
                     <div key={group.id} className="contents md:flex md:flex-col md:gap-px">

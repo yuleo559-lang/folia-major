@@ -1,5 +1,6 @@
 import React from 'react';
 import GridViewOverlayHost from '../../library/app/GridViewOverlayHost';
+import SpotifyImportSheet from './spotify-import/SpotifyImportSheet';
 import LibraryAccountHost from '../../library/app/LibraryAccountHost';
 import { resolveLibrarySurface } from '../../library/registry';
 import { useLibrarySuiteStore } from '../../library/core/suite/useLibrarySuiteStore';
@@ -69,6 +70,7 @@ const Home: React.FC<AppHomeProps> = ({ model, isHomeFullyHidden, isInteractive 
                     )}
                 </GridViewOverlayHost>
             </div>
+            <SpotifyImportSheet />
             {activeEntry && (
                 <FoliumHomePage entry={activeEntry} extraTabs={extraTabs}
                     account={model.account} surfaceProps={model.surfaceProps} />

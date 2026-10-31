@@ -4,6 +4,8 @@ import type { OnlineLibraryProvider, ProviderCollection } from '../../../types/o
 import { SPOTIFY_LIKED_ID, present, spotifyAlbumOf, spotifyId, spotifyPage, spotifyPlaylistOf, spotifySongOf, spotifyUri } from './spotifyNormalize';
 import type { SpotifyAlbum, SpotifyPlaylist, SpotifyTrack } from './spotifyNormalize';
 import { querySpotify } from './spotifyTransport';
+import { isSpotifyNativeApiEnabled } from './spotifyApiConfig';
+import { getSpotifyApiPlaylists } from './spotifyApiLibrary';
 
 // src/services/onlineMusic/spotify/spotifyLibrary.ts
 // What the account keeps: its playlists (its own and the ones it follows), its albums, and the
@@ -58,6 +60,7 @@ const likedCollection = async (): Promise<ProviderCollection> => {
 export const spotifyLibrary: OnlineLibraryProvider = {
     // The liked songs come first, on the first page only; `total` counts them in.
     async getUserPlaylists(_userId, limit, offset) {
+        if (isSpotifyNativeApiEnabled()) return getSpotifyApiPlaylists(_userId, limit, offset);
         const [page, liked] = await Promise.all([
             querySpotify<LibraryAnswer>('libraryV3', libraryVariables('Playlists', limit, offset)),
             offset === 0 ? likedCollection() : null,
@@ -69,6 +72,8 @@ export const spotifyLibrary: OnlineLibraryProvider = {
     },
     // The id of every liked song, which is what shows a song's heart as full.
     async getLikedSongIds() {
+        // The iPhone's account-only Spotify connection reads playlists only; it does not request or cache Liked Songs.
+        if (isSpotifyNativeApiEnabled()) return { ids: [], whole: true };
         const ids: string[] = [];
         let offset = 0;
         let total: number | undefined;

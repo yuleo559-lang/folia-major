@@ -537,6 +537,8 @@ export type LoginSelfCheckResult = {
 
 export interface OnlineAuthProvider {
     getLoginStatus(): Promise<ProviderUser | null>;
+    /** False when the provider's user/playlist metadata must stay in memory and never enter Folia's on-device snapshot. */
+    cacheAccountSnapshot?: boolean;
     /**
      * The listener signs out. The account leaves the screen as soon as this is called, and what
      * shows the account asks the adapter again then: whatever the adapter answers such questions

@@ -18,6 +18,11 @@ import { spotifyMutations } from './spotifyMutations';
 import { resetSpotifyRecommendations, spotifyRecommendations } from './spotifyRecommendations';
 import { describeSpotifyLoginFailure, spotifyLoginFailure } from './spotifyLoginFailure';
 import { describeSpotifyFailure } from './spotifyFailure';
+import { isSpotifyNativeApiEnabled } from './spotifyApiConfig';
+import {
+    cancelSpotifyApiLogin, checkSpotifyApiLogin, getSpotifyApiLoginStatus, getSpotifyApiLoginTtlMs,
+    logoutSpotifyApi, openSpotifyApiLogin, startSpotifyApiLogin,
+} from './spotifyApiAuth';
 
 // src/services/onlineMusic/spotify/spotifyProvider.ts
 // Spotify adapter. Sign-in happens in the browser where the person is already signed in to
@@ -70,12 +75,19 @@ i18n.on('languageChanged', clearSpotifyCatalogCache);
 export const spotifyProvider: OnlineMusicProvider = {
     id: 'spotify', displayName: 'Spotify', shortName: 'Spotify',
     mark: { letter: 'S', color: '#22c55e' },
-    getAvailability: getSpotifyTransportAvailability,
+    getAvailability: () => (isSpotifyNativeApiEnabled() ? { configured: true } : getSpotifyTransportAvailability()),
     describeFailure: describeSpotifyFailure,
     // `recommendations` is the radio tab: a personal FM, daily songs and playlists, each made of
     // what Spotify has for the account (spotifyRecommendations.ts). `personalFmModes` stays off:
     // the FM here has no modes. Spotify's recommendation page is the explore tab.
-    capabilities: {
+    capabilities: isSpotifyNativeApiEnabled() ? {
+        // The native build uses Spotify's Web API to read this account's playlists only. Folia does
+        // not play Spotify audio, search its catalogue, read Liked Songs, or cache API content.
+        search: false, playback: false, lyrics: false, wordByWordLyrics: false, auth: true,
+        userLibrary: true, playlists: true, albums: false, artists: false, userAlbums: false,
+        recommendations: false, explore: false, mutations: false, likes: false,
+        playlistTrackMutations: false, playlistSubscription: false,
+    } : {
         search: true, playback: true, lyrics: true, wordByWordLyrics: false, auth: true,
         userLibrary: true, playlists: true, albums: true, artists: true, userAlbums: true,
         // `playlistSubscription` is albums and other people's playlists (`mutations.canSubscribe`).
@@ -165,9 +177,10 @@ export const spotifyProvider: OnlineMusicProvider = {
         },
     },
     auth: {
+        cacheAccountSnapshot: !isSpotifyNativeApiEnabled(),
         getLoginTexts: () => ({
             title: 'home.loginTitleSpotify',
-            note: 'home.loginNoteSpotify',
+            note: isSpotifyNativeApiEnabled() ? 'spotifyImport.loginNote' : 'home.loginNoteSpotify',
             caseNotes: {
                 'browser-unfinished': 'home.loginCaseSpotifyUnfinished',
                 'not-authorized': 'home.loginCaseSpotifyDenied',
@@ -175,6 +188,7 @@ export const spotifyProvider: OnlineMusicProvider = {
             },
         }),
         async getLoginStatus() {
+            if (isSpotifyNativeApiEnabled()) return getSpotifyApiLoginStatus();
             const user = await requestSpotify<ProviderUser | null>('login_status');
             return user ? normalizeSpotifyUser(user) : null;
         },
@@ -182,16 +196,22 @@ export const spotifyProvider: OnlineMusicProvider = {
             activeLogin = null;
             clearSpotifyCatalogCache();
             resetSpotifyRecommendations();
+            if (isSpotifyNativeApiEnabled()) return logoutSpotifyApi();
             await requestSpotify('logout');
         },
         async startLogin() {
+            if (isSpotifyNativeApiEnabled()) return startSpotifyApiLogin();
             activeLogin = await requestSpotify<SpotifyWireLoginStart>('login_start');
             return activeLogin.key;
         },
-        async openLoginPage(key) { await requestSpotify('login_open', { key }); },
+        async openLoginPage(key) {
+            if (isSpotifyNativeApiEnabled()) return openSpotifyApiLogin(key);
+            await requestSpotify('login_open', { key });
+        },
         // A sign-in that went through may be another account's (a sign-in Spotify stopped accepting
         // is removed without a sign-out): the FM and the lists of the one before are forgotten.
         async checkLogin(key) {
+            if (isSpotifyNativeApiEnabled()) return checkSpotifyApiLogin(key);
             const state = await requestSpotify<LoginState>('login_check', { key });
             if (state.state === 'confirmed') resetSpotifyRecommendations();
             if (state.state !== 'error') return state;
@@ -200,10 +220,13 @@ export const spotifyProvider: OnlineMusicProvider = {
         },
         describeLoginFailure: describeSpotifyLoginFailure,
         async cancelLogin(key) {
+            if (isSpotifyNativeApiEnabled()) return cancelSpotifyApiLogin(key);
             if (activeLogin?.key === key) activeLogin = null;
             await requestSpotify('login_cancel', { key });
         },
-        getLoginTtlMs: () => (activeLogin?.expiresInMs || DEFAULT_LOGIN_TTL_MS) + LOGIN_SETTLE_MS,
+        getLoginTtlMs: () => (isSpotifyNativeApiEnabled()
+            ? getSpotifyApiLoginTtlMs()
+            : (activeLogin?.expiresInMs || DEFAULT_LOGIN_TTL_MS) + LOGIN_SETTLE_MS),
     },
     catalog: spotifyCatalog,
     library: spotifyLibrary,

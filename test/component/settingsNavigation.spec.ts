@@ -75,6 +75,21 @@ test.describe('settings navigation - wide layout', () => {
     });
 });
 
+test.describe('settings navigation - touch targets', () => {
+    test.use({ viewport: { width: 375, height: 720 }, isMobile: true, hasTouch: true });
+
+    test('categories remain tap-selectable with a minimum 44px target', async ({ mount, page }) => {
+        await mount('settingsNavigation');
+
+        const category = page.locator('aside nav button').nth(1);
+        const box = await category.boundingBox();
+        expect(box?.height).toBeGreaterThanOrEqual(44);
+        expect(box?.width).toBeGreaterThanOrEqual(44);
+        await category.tap();
+        await expect(category).toHaveAttribute('aria-current', 'page');
+    });
+});
+
 test.describe('settings navigation - narrow layout', () => {
     test.use({ viewport: { width: 375, height: 720 } });
 
@@ -84,6 +99,23 @@ test.describe('settings navigation - narrow layout', () => {
         await expect(page.getByText('Interface', { exact: true })).toBeHidden();
         await expect(page.locator('aside').getByRole('button', { name: 'settingsPagePlayer', exact: true })).toBeVisible();
         await expect(contentsEntry(page, 'Alpha Section')).toBeVisible();
+    });
+
+    test('a mouse drag scrolls without selecting a category, and the next click still works', async ({ mount, page }) => {
+        await mount('settingsNavigation');
+        const nav = page.locator('aside nav');
+        const firstCategory = nav.getByRole('button').first();
+        const firstBox = await firstCategory.boundingBox();
+        if (!firstBox) throw new Error('The first settings category has no visible bounds');
+        await page.mouse.move(firstBox.x + firstBox.width / 2, firstBox.y + firstBox.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(firstBox.x + firstBox.width / 2 - 120, firstBox.y + firstBox.height / 2, { steps: 6 });
+        await page.mouse.up();
+        await expect.poll(() => nav.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
+        await expect(firstCategory).toHaveAttribute('aria-current', 'page');
+        const nextCategory = nav.getByRole('button').nth(1);
+        await nextCategory.click();
+        await expect(nextCategory).toHaveAttribute('aria-current', 'page');
     });
 
     test('spaces adjacent categories of the strip exactly 4px apart, across a group boundary too', async ({ mount, page }) => {
