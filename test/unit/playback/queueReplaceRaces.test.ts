@@ -91,6 +91,7 @@ vi.mock('@/services/onlineMusic/omni', () => ({
     omni: {
         canPlaySong: () => true,
         getProviderLabel: (id: string) => id,
+        getExternalPlayback: () => null,
         getPersonalFm: () => env.self.fmBatch ?? Promise.resolve([]),
         getSongReplacement: async (song: { id: string }) => env.self.replacementFor.get(String(song.id)) ?? null,
         getSongDetail: async (_providerId: string, id: number) => {

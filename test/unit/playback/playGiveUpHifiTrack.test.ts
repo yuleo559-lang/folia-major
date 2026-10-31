@@ -104,6 +104,7 @@ vi.mock('@/services/onlineMusic/omni', () => ({
     omni: {
         canPlaySong: () => true,
         getProviderLabel: (id: string) => id,
+        getExternalPlayback: () => null,
         getSongReplacement: async () => ({
             song: { id: 'other', name: 'Other version', artists: [], album: { id: '', name: '' }, durationMs: 1000, sourceRef: { kind: 'online', providerId: 'bodian', mediaId: 'other' } },
             label: 'live',

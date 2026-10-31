@@ -1,3 +1,6 @@
+import { Capacitor } from '@capacitor/core';
+import { AppLauncher } from '@capacitor/app-launcher';
+
 // src/utils/system/outsideLink.ts
 // Opening a page outside the app, the one place that knows how: the desktop app hands the address
 // to the system browser (a plain link would load it inside the app's own window), the web build
@@ -14,6 +17,11 @@ export const opensThroughDesktopApp = (): boolean => Boolean(window.electron?.op
 export const openOutsideLink = async (url: string): Promise<void> => {
     if (window.electron?.openExternalUrl) {
         await window.electron.openExternalUrl(url);
+        return;
+    }
+    if (Capacitor.isNativePlatform()) {
+        const result = await AppLauncher.openUrl({ url });
+        if (!result.completed) throw new Error('The system could not open this address');
         return;
     }
     window.open(url, '_blank', 'noopener,noreferrer');

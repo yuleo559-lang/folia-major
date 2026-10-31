@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import ConfirmDialog from '../../shared/ConfirmDialog';
 import ThemedDialog from '../../shared/ThemedDialog';
 import { SheetButton } from '../../shared/Sheet';
-import { openOutsideLink } from '../../../utils/system/outsideLink';
+import { openSpotifyResource } from '../../../services/onlineMusic/spotify/spotifyExternalPlayback';
 import { openLoginWindow } from '../../login/loginWindowStore';
 import { useOnlineProviderAccountStore } from '../../../stores/useOnlineProviderAccountStore';
 import { omni } from '../../../services/onlineMusic/omni';
@@ -16,7 +16,6 @@ import { useSpotifyImportUiStore } from './spotifyImportUiStore';
 
 // Spotify content is kept only in component memory for the time this sheet is open.
 const PAGE_SIZE = 50;
-const PLAYLIST_URL = `https://open.spotify.com/playlist/${SPOTIFY_TARGET_PLAYLIST_ID}`;
 const TARGET_PLAYLIST: ProviderCollection = {
     providerId: 'spotify',
     id: SPOTIFY_TARGET_PLAYLIST_ID,
@@ -183,8 +182,7 @@ const SpotifyImportSheet: React.FC = () => {
     }, [query, tracks]);
 
     const openTrack = useCallback((track: UnifiedSong) => {
-        const url = `https://open.spotify.com/track/${encodeURIComponent(String(track.id))}`;
-        void openOutsideLink(url).catch(() => setStatus({ key: 'spotifyImport.errorOpenSpotify', tone: 'error' }));
+        void openSpotifyResource('track', String(track.id)).catch(() => setStatus({ key: 'spotifyImport.errorOpenSpotify', tone: 'error' }));
     }, []);
     const rowProps = useMemo<RowProps>(() => ({ tracks: visibleTracks, onOpen: openTrack }), [openTrack, visibleTracks]);
     const countLabel = total === undefined
@@ -192,7 +190,7 @@ const SpotifyImportSheet: React.FC = () => {
         : t('spotifyImport.trackCount', { count: total });
 
     const openPlaylist = () => {
-        void openOutsideLink(PLAYLIST_URL).catch(() => setStatus({ key: 'spotifyImport.errorOpenSpotify', tone: 'error' }));
+        void openSpotifyResource('playlist', SPOTIFY_TARGET_PLAYLIST_ID).catch(() => setStatus({ key: 'spotifyImport.errorOpenSpotify', tone: 'error' }));
     };
     const connectSpotify = (event: React.MouseEvent<HTMLButtonElement>) => openLoginWindow('spotify', event.currentTarget);
 

@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+const native = vi.hoisted(() => ({ enabled: vi.fn(() => false), open: vi.fn() }));
+vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: native.enabled } }));
+vi.mock('@capacitor/app-launcher', () => ({ AppLauncher: { openUrl: native.open } }));
 import { openOutsideLink, opensThroughDesktopApp } from '../../../src/utils/system/outsideLink';
 
 // test/unit/system/outsideLink.test.ts
@@ -15,9 +18,35 @@ const withWindow = (electron?: { openExternalUrl: (url: string) => Promise<boole
 
 afterEach(() => {
     vi.unstubAllGlobals();
+    native.enabled.mockReturnValue(false);
+    native.open.mockReset();
 });
 
 describe('openOutsideLink', () => {
+    it('hands native links to the OS without opening a WebView popup', async () => {
+        const open = withWindow();
+        native.enabled.mockReturnValue(true);
+        native.open.mockResolvedValue({ completed: true });
+        await openOutsideLink(ADDRESS);
+        expect(native.open).toHaveBeenCalledExactlyOnceWith({ url: ADDRESS });
+        expect(open).not.toHaveBeenCalled();
+    });
+
+    it('rejects if the OS cannot open a native link', async () => {
+        const open = withWindow();
+        native.enabled.mockReturnValue(true);
+        native.open.mockResolvedValue({ completed: false });
+        await expect(openOutsideLink(ADDRESS)).rejects.toThrow('could not open');
+        expect(open).not.toHaveBeenCalled();
+    });
+
+    it('propagates native plugin errors instead of pretending a popup succeeded', async () => {
+        withWindow();
+        native.enabled.mockReturnValue(true);
+        native.open.mockRejectedValue(new Error('native unavailable'));
+        await expect(openOutsideLink(ADDRESS)).rejects.toThrow('native unavailable');
+    });
+
     it('hands the address to the desktop app where there is one, and opens no tab', async () => {
         const openExternalUrl = vi.fn(async () => true);
         const open = withWindow({ openExternalUrl });

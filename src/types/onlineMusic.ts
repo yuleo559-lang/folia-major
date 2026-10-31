@@ -352,6 +352,8 @@ export interface OnlineSearchProvider {
 }
 
 export interface OnlinePlaybackProvider {
+    /** Opens a metadata-only song in its own app; never supplies audio to Folia. */
+    openExternally?(song: SongResult): Promise<void>;
     /**
      * The song by id, or null where the platform has no song by it. Takes the song's `UnifiedSong.id`
      * and also its `sourceRef.mediaId`; a platform whose two differ accepts both, in its own folder.

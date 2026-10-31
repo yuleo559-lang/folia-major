@@ -19,6 +19,7 @@ import { resetSpotifyRecommendations, spotifyRecommendations } from './spotifyRe
 import { describeSpotifyLoginFailure, spotifyLoginFailure } from './spotifyLoginFailure';
 import { describeSpotifyFailure } from './spotifyFailure';
 import { isSpotifyNativeApiEnabled } from './spotifyApiConfig';
+import { openSpotifyResource } from './spotifyExternalPlayback';
 import {
     cancelSpotifyApiLogin, checkSpotifyApiLogin, getSpotifyApiLoginStatus, getSpotifyApiLoginTtlMs,
     logoutSpotifyApi, openSpotifyApiLogin, startSpotifyApiLogin,
@@ -142,6 +143,7 @@ export const spotifyProvider: OnlineMusicProvider = {
         },
     },
     playback: {
+        openExternally: song => openSpotifyResource('track', requireSpotifySong(song)),
         async getSongDetail(id) {
             const track = (await querySpotify<TrackAnswer>('getTrack', { uri: spotifyUri('track', String(id)) })).trackUnion;
             return spotifySongOf(track && { ...track, artists: { items: [...(track.firstArtist?.items ?? []), ...(track.otherArtists?.items ?? [])] } });
@@ -152,6 +154,7 @@ export const spotifyProvider: OnlineMusicProvider = {
         // Spotify's own audio, for paying accounts only (Spotify's rule for every player that is not
         // its own): a free account is answered `subscription-required`. The URL is the desktop app's own.
         async getAudioSource(song, quality) {
+            if (isSpotifyNativeApiEnabled()) return null;
             const id = requireSpotifySong(song);
             const startedAt = Date.now();
             const audio = await requestSpotify<SpotifyWireAudio>('audio', { id, quality });

@@ -913,7 +913,14 @@ export const omni = {
     },
 
     canPlaySong(song: SongResult): boolean {
-        return Boolean(getOnlineMusicProviderForSong(song)?.playback);
+        const provider = getOnlineMusicProviderForSong(song);
+        return Boolean(provider?.capabilities.playback && provider.playback);
+    },
+
+    getExternalPlayback(song: SongResult): (() => Promise<void>) | null {
+        const provider = getOnlineMusicProviderForSong(song);
+        if (provider?.capabilities.playback || !provider?.playback?.openExternally) return null;
+        return () => provider.playback!.openExternally!(song);
     },
 
     // The quality levels a provider tells apart, lowest first (`OnlinePlaybackProvider.audioQualityLevels`;

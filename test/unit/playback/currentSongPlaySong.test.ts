@@ -19,6 +19,8 @@ const env = vi.hoisted(() => ({
     audioGate: new Map<string, Promise<unknown>>(),
     /** An installed `beforePlay` hook that answers when this resolves, or none. */
     beforePlay: null as Promise<unknown> | null,
+    /** A route owned by another playback surface, or none. */
+    externalPlayback: null as (() => Promise<void>) | null,
     detail: (_label: string) => {},
     /** What the audio source answers for a song id; a plain http address when nothing is set. */
     audioResultFor: new Map<string, unknown>(),
@@ -63,7 +65,11 @@ vi.mock('@/services/hostExtensionHooks', () => ({
     // A play that fails tells the extensions (Folium playback.failed); nothing listens here.
     notifyPlaybackFailed: () => undefined,
 }));
-vi.mock('@/services/onlineMusic/omni', () => ({ omni: { canPlaySong: () => true, getProviderLabel: (id: string) => id } }));
+vi.mock('@/services/onlineMusic/omni', () => ({ omni: {
+    canPlaySong: () => true,
+    getProviderLabel: (id: string) => id,
+    getExternalPlayback: () => env.externalPlayback,
+} }));
 vi.mock('@/services/onlineMusic/songAvailability', () => ({ askPlayedSong: () => null, isSongUnavailable: () => false }));
 vi.mock('@/services/onlineMusic/resourceCache', () => ({
     hasCachedSongAudio: async () => null,
@@ -132,6 +138,7 @@ beforeEach(() => {
     env.lyricsStateFor.clear();
     env.audioGate.clear();
     env.beforePlay = null;
+    env.externalPlayback = null;
     env.lyricCallbacks.clear();
     env.lyricsGate.clear();
     env.emptyLoadsSupplied = 0;
@@ -401,6 +408,41 @@ describe('playSong and the audio address (online)', () => {
         expect(refs.pendingResumeTimeRef.current).toBeNull();
         expect(refs.lastAudioRecoverySourceRef.current).toBeNull();
         expect(refs.shouldAutoPlay.current).toBe(true);
+    });
+
+    it('hands an externally routed song to its owner without requesting audio or changing player state', async () => {
+        const { refs, watch, queue } = mount({ address: true });
+        await queue.playSong(songA, [songA, songB]);
+        watch.take();
+        const before = usePlaybackStore.getState();
+        const external = vi.fn(async () => undefined);
+        env.externalPlayback = external;
+
+        await queue.playSong(songB, [songA, songB]);
+
+        expect(external).toHaveBeenCalledTimes(1);
+        expect(watch.take()).toEqual([]);
+        expect(usePlaybackStore.getState().currentSong).toBe(before.currentSong);
+        expect(usePlaybackStore.getState().audioSrc).toBe(before.audioSrc);
+        expect(usePlaybackStore.getState().playQueue).toBe(before.playQueue);
+        expect(refs.currentSongRef.current).toBe(keyA);
+    });
+
+    it('reports an externally routed playback failure without changing player state', async () => {
+        const { refs, watch, queue } = mount({ address: true });
+        await queue.playSong(songA, [songA, songB]);
+        watch.take();
+        const before = usePlaybackStore.getState();
+        env.externalPlayback = vi.fn(async () => { throw new Error('external route failed'); });
+
+        await queue.playSong(songB, [songA, songB]);
+
+        expect(watch.take()).toEqual([]);
+        expect(usePlaybackStore.getState().currentSong).toBe(before.currentSong);
+        expect(usePlaybackStore.getState().audioSrc).toBe(before.audioSrc);
+        expect(usePlaybackStore.getState().playQueue).toBe(before.playQueue);
+        expect(refs.currentSongRef.current).toBe(keyA);
+        expect(useStatusMessageStore.getState().message).toMatchObject({ type: 'error', text: 'status.playbackFailed' });
     });
 
     it('a copy from the media cache: its blob URL is the one to hand over next, and it has no fetch time', async () => {

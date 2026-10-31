@@ -488,6 +488,15 @@ export function usePlaybackQueueController({
         isFmCall: boolean = false,
         options: PlaybackNavigationOptions = {}
     ) => {
+        const externalPlayback = omni.getExternalPlayback(requestedSong);
+        if (externalPlayback) {
+            try {
+                await externalPlayback();
+            } catch {
+                setStatusMsg({ type: 'error', text: t('status.playbackFailed') });
+            }
+            return;
+        }
         // Extension layers (Folium `playback.beforePlay`) may cancel or redirect this play.
         // Without an installed hook this is skipped entirely, so the common path stays synchronous.
         // The hook is async, so a later playSong may finish its hook first; this call then drops
@@ -1068,6 +1077,10 @@ export function usePlaybackQueueController({
     ]);
 
     const playOnlineQueueFromStart = useCallback((songs: SongResult[]) => {
+        if (songs[0] && omni.getExternalPlayback(songs[0])) {
+            void playSong(songs[0]);
+            return;
+        }
         const retainedSongs = getPlayableOnlineQueue(songs);
         const firstPlayableSong = retainedSongs.find(isQueueSongPlayable);
         if (!firstPlayableSong) {
